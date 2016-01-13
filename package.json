@@ -1,0 +1,37 @@
+{
+  "name": "chromanym",
+  "version": "0.0.1",
+  "description": "Utility to find the closest matching named color.  A command-line interface for color-namer.",
+  "main": "index.js",
+  "keywords": [
+    "color",
+    "colors",
+    "names",
+    "rgb",
+    "hsl",
+    "hsv",
+    "lab",
+    "search",
+    "tagging",
+    "image",
+    "design",
+    "cli"
+  ],
+  "author": "Karim Hernandez",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/karimhernandez/chromanym.git"
+  },
+
+  "bin": {
+    "chromanym": "./index.js"
+  },
+  "dependencies": {
+    "chalk": "^1.1.1",
+    "chroma-js": "^1.1.1",
+    "color-namer": "^1.1.0",
+    "commander": "^2.9.0",
+    "title-case": "^1.1.2"
+  }
+}
