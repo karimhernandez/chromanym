@@ -10,6 +10,7 @@ var namer = require('color-namer');
 
 // CLI setup
 program
+	.description(pkg.description)
 	.version(pkg.version)
 	.arguments('<color>')
 	.action(function (color) {
@@ -18,12 +19,20 @@ program
 	.parse(process.argv);
 
 // helpers
+function log(msg) {
+	if (typeof msg !== 'string') {
+		console.log(chalk.dim(JSON.stringify(msg)));
+	} else {
+		console.log(msg);
+	}
+}
+
 function error (msg) {
-	console.log(chalk.red(msg));
+	log(chalk.red(msg));
 }
 
 function info (msg) {
-	console.log(chalk.dim(msg));
+	log(chalk.dim(msg));
 }
 
 function help(msg) {
@@ -48,7 +57,10 @@ function pluckClosestMatch(results) {
 
 	//keys = Object.keys(results);
 	//color dictionaries in order of preference.
-	keys = ['basic', 'html', 'pantone', 'ntc', 'x11'];
+	keys = ['basic', 'html', 'pantone', 'ntc', 'x11']; // 'roygbiv'
+
+	// TODO - Option to specify which dictionaries to use for a match.
+	//keys = ['ntc'];
 
 	for (i = 0, len = keys.length; i < len; i++) {
 		match = results[keys[i]][0];
@@ -64,14 +76,14 @@ function pluckClosestMatch(results) {
 
 // main method
 function run(colorStr) {
-	var results, result, color, name, hex, output, alpha;
+	var results, result, color, alpha, name, hex, output;
 
 	try {
 		color = chroma(colorStr);
-		alpha = chroma(colorStr).alpha();
+		alpha = color.alpha();
 	} catch (ex) {
-		error(ex);
-		//error('Unable to parse color: ' + colorStr);
+		//error(ex);
+		error('Unable to parse color: ' + colorStr);
 	}
 
 	if (!color) return;
@@ -86,16 +98,17 @@ function run(colorStr) {
 
 	result = pluckClosestMatch(results);
 	name = result.name.toLowerCase();
-	hex = cleanColor(result.hex);
+	hex = cleanColor(result.hex.toLowerCase());
+	color = color.hex().toLowerCase();
 
 	if (alpha !== 1) {
 		info ('Note: alpha value (' + alpha + ') was ignored');
 	}
 
 	if (result.distance === 0) {
-		console.log(chalk.white(name + ', #' + hex + ' (exact match, ' + result.list + ' color list)'));
+		log(chalk.white(name + ', #' + hex + ' (exact match, ' + result.list + ' color list)'));
 	} else {
-		console.log(chalk.cyan(name + ', #' + hex + ' (aproximate match)'));
+		log(chalk.cyan(name + ', #' + hex + ' (approximate match to ' + color + ')'));
 	}
 }
 

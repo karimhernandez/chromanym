@@ -1,7 +1,7 @@
 {
   "name": "chromanym",
-  "version": "0.0.1",
-  "description": "Utility to find the closest matching named color.  A command-line interface for color-namer.",
+  "version": "0.0.2",
+  "description": "Utility which suggests a name for a given color by finding the closest matching named color.",
   "main": "index.js",
   "keywords": [
     "color",
@@ -19,11 +19,7 @@
   ],
   "author": "Karim Hernandez",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/karimhernandez/chromanym.git"
-  },
-
+  "repository": "karimhernandez/chromanym.git",
   "bin": {
     "chromanym": "./index.js"
   },
