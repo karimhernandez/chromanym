@@ -89,14 +89,15 @@ function run(colorStr) {
 	if (!color) return;
 
 	try {
-		results = namer(colorStr);
+		// results = namer(colorStr);
+		result = namer(colorStr);
 	} catch (ex) {
 		error(ex);
 	}
 
-	if (!results) return;
+	if (!result) return;
 
-	result = pluckClosestMatch(results);
+	// result = pluckClosestMatch(results);
 	name = result.name.toLowerCase();
 	hex = cleanColor(result.hex.toLowerCase());
 	color = color.hex().toLowerCase();

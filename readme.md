@@ -34,4 +34,4 @@ To Zeke for his [color-namer](https://github.com/zeke/color-namer) package, whic
 
 ## License
 
-MIT © 2016 Karim Hernandez
+MIT © 2017 Karim Hernandez
