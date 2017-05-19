@@ -2,6 +2,7 @@
 'use strict';
 
 var path = require('path');
+var fs = require('fs');
 var program = require('commander');
 var chalk = require('chalk');
 var pkg = require(path.join(__dirname, 'package.json'));
@@ -12,32 +13,37 @@ var namer = require('color-namer');
 program
 	.description(pkg.description)
 	.version(pkg.version)
+	.option('-c, --colors <path>', 'provide path to a custom colors json file')
+	.option('-l, --lists <list>', 'specify which color lists to search'); // onLists);
+
+program
 	.arguments('<color>')
 	.action(function (color) {
 		run(color);
-	})
-	.parse(process.argv);
+	});
+
+program.parse(process.argv);
 
 // helpers
 function log(msg) {
 	if (typeof msg !== 'string') {
-		console.log(chalk.dim(JSON.stringify(msg)));
+		console.log(chalk.gray(JSON.stringify(msg)));
 	} else {
 		console.log(msg);
 	}
 }
 
-function error (msg) {
+function error(msg) {
 	log(chalk.red(msg));
 }
 
-function info (msg) {
-	log(chalk.dim(msg));
+function info(msg) {
+	log(chalk.gray(msg));
 }
 
 function help(msg) {
 	if (msg) {
-		error (msg);
+		error(msg);
 	}
 	program.help(function (text) {
 		return chalk.red(text);
@@ -51,32 +57,52 @@ function cleanColor(colorStr) {
 	return colorStr;
 }
 
-// process results
-function pluckClosestMatch(results) {
-	var i, len, keys, match, result, shortest = 30;
+function fileExists(relativePath) {
+	var fullPath = path.join(process.cwd(), relativePath);
 
-	//keys = Object.keys(results);
-	//color dictionaries in order of preference.
-	keys = ['basic', 'html', 'pantone', 'ntc', 'x11']; // 'roygbiv'
+	try {
+		return fs.statSync(fullPath).isFile();
+	}
+	catch (err) {
+		return false;
+	}
+}
 
-	// TODO - Option to specify which dictionaries to use for a match.
-	//keys = ['ntc'];
+function readFile(relativePath) {
+	var fullPath, content;
 
-	for (i = 0, len = keys.length; i < len; i++) {
-		match = results[keys[i]][0];
-		if (shortest > match.distance) {
-			shortest = match.distance;
-			result = match;
-			result.list = keys[i];
+	if (fileExists(relativePath)) {
+		fullPath = path.join(process.cwd(), relativePath);
+		content = fs.readFileSync(fullPath, 'utf8');
+		if (!content) {
+			error('Unknown error reading from ' + relativePath);
 		}
+	} else {
+		error('File not found ' + relativePath);
 	}
 
-	return result;
+	return content;
 }
+
+// function onLists(lists) {
+// 	if (lists) {
+
+// 	} else {
+// 		error('Please specify one of the following lists: ' + Object.keys(namer.lists).join(', '));
+// 	}
+// }
 
 // main method
 function run(colorStr) {
-	var results, result, color, alpha, name, hex, output;
+	var lists,
+		colors = [],
+		results,
+		result,
+		color,
+		alpha,
+		name,
+		hex,
+		output;
 
 	try {
 		color = chroma(colorStr);
@@ -88,28 +114,45 @@ function run(colorStr) {
 
 	if (!color) return;
 
+	if (program.colors) {
+		if (fileExists(program.colors)) {
+			colors = JSON.parse(readFile(program.colors));
+		} else {
+			error('File not found ' + program.colors);
+			return;
+		}
+	}
+
+	if (program.lists) {
+		lists = program.lists.split(',');
+	} else {
+		lists = ['basic', 'html', 'pantone', 'ntc', 'x11']; // 'roygbiv'
+	}
+
+	// lists = ['basic', 'html', 'pantone', 'ntc', 'x11']; // 'roygbiv'
+	// colors = [{ name: 'stupidname', hex: '#FFFFFF' }];
+
 	try {
-		// results = namer(colorStr);
-		result = namer(colorStr);
+		// result = namer(colorStr);
+		result = namer(colorStr, { lists: lists, colors: colors });
 	} catch (ex) {
 		error(ex);
 	}
 
 	if (!result) return;
 
-	// result = pluckClosestMatch(results);
 	name = result.name.toLowerCase();
 	hex = cleanColor(result.hex.toLowerCase());
 	color = color.hex().toLowerCase();
 
 	if (alpha !== 1) {
-		info ('Note: alpha value (' + alpha + ') was ignored');
+		info('Note: alpha value (' + alpha + ') was ignored');
 	}
 
 	if (result.distance === 0) {
 		log(chalk.white(name + ', #' + hex + ' (exact match, ' + result.list + ' color list)'));
 	} else {
-		log(chalk.cyan(name + ', #' + hex + ' (approximate match to ' + color + ')'));
+		log(chalk.cyan(name + ', #' + hex + ' (approximate match to ' + color + ' from ' + result.list + ' color list)'));
 	}
 }
 
