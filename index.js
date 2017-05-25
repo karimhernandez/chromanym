@@ -7,7 +7,7 @@ var program = require('commander');
 var chalk = require('chalk');
 var pkg = require(path.join(__dirname, 'package.json'));
 var chroma = require('chroma-js');
-var namer = require('color-namer');
+var dictionary = require('./color-dictionary');
 
 // CLI setup
 program
@@ -24,7 +24,7 @@ program
 
 program.parse(process.argv);
 
-// helpers
+// utilities
 function log(msg) {
 	if (typeof msg !== 'string') {
 		console.log(chalk.gray(JSON.stringify(msg)));
@@ -88,7 +88,7 @@ function readFile(relativePath) {
 // 	if (lists) {
 
 // 	} else {
-// 		error('Please specify one of the following lists: ' + Object.keys(namer.lists).join(', '));
+// 		error('Please specify one of the following lists: ' + Object.keys(dictionary.lists).join(', '));
 // 	}
 // }
 
@@ -133,8 +133,8 @@ function run(colorStr) {
 	// colors = [{ name: 'stupidname', hex: '#FFFFFF' }];
 
 	try {
-		// result = namer(colorStr);
-		result = namer(colorStr, { lists: lists, colors: colors });
+		// result = dictionary(colorStr);
+		result = dictionary(colorStr, { lists: lists, colors: colors });
 	} catch (ex) {
 		error(ex);
 	}
