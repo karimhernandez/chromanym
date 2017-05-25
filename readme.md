@@ -30,7 +30,7 @@ eggplant, #614051 (aproximate match to #5f4457)
 ```
 
 ## Thanks
-To Zeke for his [color-namer](https://github.com/zeke/color-namer) package, which indexes several dictionaries of named colors by the euclidean distance between each color and the given color.
+To Zeke for his [color-namer](https://github.com/zeke/color-namer) package, which indexes several dictionaries of named colors by the euclidean distance between each dictionary color and a given color.
 
 ## License
 
