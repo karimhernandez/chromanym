@@ -1,6 +1,6 @@
 {
   "name": "chromanym",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "Utility which suggests a name for a given color by finding the closest matching named color.",
   "main": "index.js",
   "keywords": [
