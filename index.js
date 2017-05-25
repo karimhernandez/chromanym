@@ -1,162 +1,86 @@
-#!/usr/bin/env node
 'use strict';
 
-var path = require('path');
-var fs = require('fs');
-var program = require('commander');
-var chalk = require('chalk');
-var pkg = require(path.join(__dirname, 'package.json'));
 var chroma = require('chroma-js');
-var dictionary = require('./color-dictionary');
+var distance = require('./euclidean-distance');
+var options;
 
-// CLI setup
-program
-	.description(pkg.description)
-	.version(pkg.version)
-	.option('-c, --colors <path>', 'provide path to a custom colors json file')
-	.option('-l, --lists <list>', 'specify which color lists to search'); // onLists);
+// explicit require statements
+var lists = {
+  basic: require('./lib/colors/basic'),
+  html: require('./lib/colors/html'),
+  ntc: require('./lib/colors/ntc'),
+  pantone: require('./lib/colors/pantone'),
+  roygbiv: require('./lib/colors/roygbiv'),
+  x11: require('./lib/colors/x11')
+};
 
-program
-	.arguments('<color>')
-	.action(function (color) {
-		run(color);
-	});
+// default options
+var options = {
+  keys: ['basic', 'html', 'ntc', 'pantone', 'roygbiv', 'x11'],
+  colors: [] // Color lists expected to have { name: 'foo', hex: '#FFF' }
+};
 
-program.parse(process.argv);
-
-// utilities
-function log(msg) {
-	if (typeof msg !== 'string') {
-		console.log(chalk.gray(JSON.stringify(msg)));
-	} else {
-		console.log(msg);
-	}
+function opt(options, name, defaultValue) {
+  return options && options[name] !== undefined ? options[name] : defaultValue;
 }
 
-function error(msg) {
-	log(chalk.red(msg));
+function getResults(color) {
+  var results = {};
+  if (options.colors.length > 0) {
+    lists.custom = options.colors;
+  }
+  for (var key in lists) {
+    results[key] = lists[key]
+      .map(function (name) {
+        name.distance = distance(color.lab(), chroma(name.hex).lab());
+        return name;
+      })
+      .sort(function (a, b) {
+        return a.distance - b.distance;
+      })
+  }
+  return results;
 }
 
-function info(msg) {
-	log(chalk.gray(msg));
+function pluckNearest(color) {
+  var i, len, keys, match, result, results, shortest = 30;
+
+  results = getResults(color);
+  keys = options.keys;
+
+  for (i = 0, len = keys.length; i < len; i++) {
+    if (results[keys[i]]) {
+      match = results[keys[i]][0];
+      if (shortest > match.distance) {
+        shortest = match.distance;
+        result = match;
+        result.list = keys[i];
+      }
+    }
+  }
+
+  return result;
 }
 
-function help(msg) {
-	if (msg) {
-		error(msg);
-	}
-	program.help(function (text) {
-		return chalk.red(text);
-	});
+function main(color, opts) {
+  color = chroma(color);
+
+  opts = opts || {};
+  if (opts) {
+    options.keys = opt(opts, 'lists', options.keys);
+    options.colors = opt(opts, 'colors', options.colors);
+  }
+
+  options.keys.unshift('custom');
+
+  return pluckNearest(color);
 }
 
-function cleanColor(colorStr) {
-	if (typeof colorStr === 'string') {
-		return colorStr.replace('#', '');
-	}
-	return colorStr;
-}
 
-function fileExists(relativePath) {
-	var fullPath = path.join(process.cwd(), relativePath);
+var dict = main;
+dict.nearest = pluckNearest;
+dict.results = getResults;
+dict.chroma = chroma;
+dict.lists = lists;
 
-	try {
-		return fs.statSync(fullPath).isFile();
-	}
-	catch (err) {
-		return false;
-	}
-}
-
-function readFile(relativePath) {
-	var fullPath, content;
-
-	if (fileExists(relativePath)) {
-		fullPath = path.join(process.cwd(), relativePath);
-		content = fs.readFileSync(fullPath, 'utf8');
-		if (!content) {
-			error('Unknown error reading from ' + relativePath);
-		}
-	} else {
-		error('File not found ' + relativePath);
-	}
-
-	return content;
-}
-
-// function onLists(lists) {
-// 	if (lists) {
-
-// 	} else {
-// 		error('Please specify one of the following lists: ' + Object.keys(dictionary.lists).join(', '));
-// 	}
-// }
-
-// main method
-function run(colorStr) {
-	var lists,
-		colors = [],
-		results,
-		result,
-		color,
-		alpha,
-		name,
-		hex,
-		output;
-
-	try {
-		color = chroma(colorStr);
-		alpha = color.alpha();
-	} catch (ex) {
-		//error(ex);
-		error('Unable to parse color: ' + colorStr);
-	}
-
-	if (!color) return;
-
-	if (program.colors) {
-		if (fileExists(program.colors)) {
-			colors = JSON.parse(readFile(program.colors));
-		} else {
-			error('File not found ' + program.colors);
-			return;
-		}
-	}
-
-	if (program.lists) {
-		lists = program.lists.split(',');
-	} else {
-		lists = ['basic', 'html', 'pantone', 'ntc', 'x11']; // 'roygbiv'
-	}
-
-	// lists = ['basic', 'html', 'pantone', 'ntc', 'x11']; // 'roygbiv'
-	// colors = [{ name: 'stupidname', hex: '#FFFFFF' }];
-
-	try {
-		// result = dictionary(colorStr);
-		result = dictionary(colorStr, { lists: lists, colors: colors });
-	} catch (ex) {
-		error(ex);
-	}
-
-	if (!result) return;
-
-	name = result.name.toLowerCase();
-	hex = cleanColor(result.hex.toLowerCase());
-	color = color.hex().toLowerCase();
-
-	if (alpha !== 1) {
-		info('Note: alpha value (' + alpha + ') was ignored');
-	}
-
-	if (result.distance === 0) {
-		log(chalk.white(name + ', #' + hex + ' (exact match, ' + result.list + ' color list)'));
-	} else {
-		log(chalk.cyan(name + ', #' + hex + ' (approximate match to ' + color + ' from ' + result.list + ' color list)'));
-	}
-}
-
-// Spit out usage for incorrect number of args
-if (program.args.length != 2) {
-	help();
-}
+module.exports = dict;
